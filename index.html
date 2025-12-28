@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Control Quest: The VONE Risk Map (Week 2)</title>
+  <style>
+    :root{
+      --vone-blue:#4797cd;
+      --bg:#0b1220;
+      --card:rgba(255,255,255,0.08);
+      --text:rgba(255,255,255,0.92);
+      --muted:rgba(255,255,255,0.72);
+      --border:rgba(255,255,255,0.14);
+      --good:rgba(0,255,140,0.16);
+      --warn:rgba(255,193,7,0.18);
+      --bad:rgba(255,82,82,0.16);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 15% 10%, rgba(71,151,205,0.25), transparent 60%),
+                  radial-gradient(1200px 600px at 80% 20%, rgba(255,255,255,0.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+    .app{
+      width:min(980px,100%);
+      border:1px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+      background:rgba(0,0,0,0.28);
+      backdrop-filter: blur(8px);
+      box-shadow:0 18px 50px rgba(0,0,0,0.35);
+    }
+    header{
+      padding:16px 18px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{display:flex;flex-direction:column;gap:2px}
+    .brand h1{margin:0;font-size:16px}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      font-size:12px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--vone-blue);box-shadow:0 0 16px rgba(71,151,205,0.9)}
+    main{padding:16px 18px 18px}
+    .grid{display:grid;grid-template-columns:1.35fr 0.65fr;gap:14px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:var(--card);
+      padding:14px;
+    }
+    .scene-title{margin:0 0 6px;font-size:18px}
+    .scene-text{margin:0 0 12px;line-height:1.45;color:var(--muted);font-size:14px;white-space:pre-wrap}
+    .choices{display:grid;gap:10px}
+    button.choice{
+      width:100%;
+      text-align:left;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,0.22);
+      color:var(--text);
+      cursor:pointer;
+      transition:border-color .12s ease, transform .04s ease;
+      font-size:14px;
+      line-height:1.25;
+    }
+    button.choice:hover{border-color:rgba(71,151,205,0.55)}
+    button.choice:active{transform:translateY(1px)}
+    button.choice[disabled]{opacity:.65;cursor:not-allowed}
+    .feedback{
+      margin-top:12px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,0.20);
+      font-size:13px;
+      line-height:1.35;
+      white-space:pre-wrap;
+      display:none;
+    }
+    .feedback.good{background:var(--good);color:rgba(255,255,255,0.92)}
+    .feedback.warn{background:var(--warn);color:rgba(255,255,255,0.92)}
+    .feedback.bad{background:var(--bad);color:rgba(255,255,255,0.92)}
+    .meter{display:grid;gap:10px}
+    .meter h3{margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.86)}
+    .bar{height:10px;border-radius:999px;border:1px solid var(--border);background:rgba(0,0,0,0.18);overflow:hidden}
+    .fill{height:100%;background:var(--vone-blue);width:50%}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .stat{border:1px solid var(--border);border-radius:14px;background:rgba(0,0,0,0.18);padding:10px}
+    .stat p{margin:0;color:var(--muted);font-size:12px}
+    .stat strong{display:block;font-size:16px;color:var(--text);margin-top:4px}
+    .small{font-size:12px;color:var(--muted)}
+    .footer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;display:none}
+    .action{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,0.22);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .action.primary{background:rgba(71,151,205,0.24);border-color:rgba(71,151,205,0.55)}
+    .codebox{
+      margin-top:10px;
+      display:grid;
+      gap:8px;
+      border:1px dashed rgba(255,255,255,0.30);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(0,0,0,0.22);
+      display:none;
+    }
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:16px;letter-spacing:.4px}
+    .mini-table{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      background:rgba(0,0,0,0.18);
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1.2fr .6fr .6fr .8fr;
+      gap:8px;
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      font-size:12px;
+      color:rgba(255,255,255,0.88);
+    }
+    .row.head{background:rgba(71,151,205,0.14);color:rgba(255,255,255,0.92);font-weight:600}
+    .row:last-child{border-bottom:none}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.88)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <h1>Control Quest: The VONE Risk Map</h1>
+        <p>Week 2 Simulation · Map risks, rank them, choose smart controls</p>
+      </div>
+      <div class="pill"><span class="dot"></span><span id="progressText">Scene 1 of 6</span></div>
+    </header>
+
+    <main>
+      <div class="grid">
+        <section class="card">
+          <h2 class="scene-title" id="sceneTitle"></h2>
+          <p class="scene-text" id="sceneText"></p>
+
+          <div class="choices" id="choices"></div>
+          <div class="feedback" id="feedback"></div>
+
+          <div class="footer-actions" id="footerActions">
+            <button class="action primary" id="nextBtn">Continue</button>
+            <button class="action" id="restartBtn">Restart</button>
+          </div>
+
+          <div class="codebox" id="endBlock">
+            <div class="feedback good" id="endSummary" style="display:block;"></div>
+            <div class="small">Completion Code (paste into VONE):</div>
+            <div class="code" id="completionCode"></div>
+            <div class="footer-actions" style="display:flex;">
+              <button class="action primary" id="copyBtn">Copy Code</button>
+              <button class="action" id="restartBtn2">Play Again</button>
+            </div>
+            <div class="small">Week 2 skill unlocked: you can justify controls with risk logic, not vibes.</div>
+          </div>
+        </section>
+
+        <aside class="card">
+          <div class="meter">
+            <div>
+              <h3>Asset Clarity</h3>
+              <div class="bar"><div class="fill" id="assetFill"></div></div>
+            </div>
+            <div>
+              <h3>Risk Signal (higher = better prioritization)</h3>
+              <div class="bar"><div class="fill" id="signalFill"></div></div>
+            </div>
+            <div>
+              <h3>Control Fit</h3>
+              <div class="bar"><div class="fill" id="fitFill"></div></div>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <p>Current Rank</p>
+              <strong id="rankText">—</strong>
+            </div>
+            <div class="stat">
+              <p>Score</p>
+              <strong id="scoreText">0</strong>
+            </div>
+          </div>
+
+          <p class="small" style="margin-top:12px;">
+            Your mission: build a tiny risk register and choose controls that match what actually matters.
+          </p>
+
+          <div class="mini-table" id="riskTable" style="display:none;">
+            <div class="row head">
+              <div>Risk Item</div><div>Like</div><div>Impact</div><div>Plan</div>
+            </div>
+            <div class="row" id="r1"></div>
+            <div class="row" id="r2"></div>
+            <div class="row" id="r3"></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Week 2 focuses: assets, likelihood/impact, risk register mindset, control selection.
+    const scenes = [
+      {
+        title: "Scene 1: The Asset Hunt",
+        text: "You arrive at VONE HQ. The team says:\n“We need to be secure.”\n\nYou ask: “Secure WHAT?”\n\nPick the first asset you map (start the risk register).",
+        choices: [
+          { label: "Learner profiles + grades (high sensitivity)", reg: {name:"Learner Data", like:2, impact:4}, delta:{asset:+3, signal:+2, fit:+1}, feedback:"GOOD START.\nAssets drive everything. If you can’t name what matters, you can’t protect it." },
+          { label: "Marketing images on the homepage", reg: {name:"Marketing Media", like:2, impact:1}, delta:{asset:+1, signal:0, fit:0}, feedback:"OK, but low priority.\nWeek 2 win is focusing on what creates real harm if compromised." },
+          { label: "Office snacks inventory (important to morale)", reg: {name:"Snack Vault", like:1, impact:1}, delta:{asset:0, signal:-1, fit:0}, feedback:"FUN… but not risk-critical.\nLet’s map the assets that affect trust, operations, or safety." }
+        ]
+      },
+      {
+        title: "Scene 2: Likelihood vs Impact",
+        text: "A staff member reused a password. A login attempt hits the admin portal.\n\nHow do you rate the risk (likelihood + impact)?",
+        choices: [
+          { label: "High likelihood, high impact (treat as priority).", reg: {name:"Account Takeover", like:4, impact:4}, delta:{asset:+1, signal:+3, fit:+1}, feedback:"SHARP READ.\nWeak credentials + admin access = fast escalation. That’s a top risk." },
+          { label: "Low likelihood, high impact (it probably won’t happen).", reg: {name:"Account Takeover", like:1, impact:4}, delta:{asset:0, signal:-1, fit:0}, feedback:"UNDER-RATED.\nIf evidence points to likely, don’t minimize it. Likelihood isn’t vibes; it’s indicators." },
+          { label: "High likelihood, low impact (no big deal).", reg: {name:"Account Takeover", like:4, impact:1}, delta:{asset:0, signal:-2, fit:0}, feedback:"MISREAD.\nAdmin portals rarely have low impact. Impact includes trust and operational disruption." }
+        ]
+      },
+      {
+        title: "Scene 3: Control Fit Check",
+        text: "Choose ONE control to reduce the account takeover risk.\nPick the best fit for Week 2 thinking: control must match the risk.",
+        choices: [
+          { label: "Enable MFA for admins + enforce password policy (simple and effective).", plan:"Mitigate", delta:{asset:+1, signal:+2, fit:+3}, feedback:"PERFECT FIT.\nThat control directly addresses the root cause and reduces likelihood quickly." },
+          { label: "Buy an expensive AI security tool immediately.", plan:"Mitigate", delta:{asset:0, signal:0, fit:-1}, feedback:"NOT WRONG, not first.\nGreat controls are proportional. Start with what meaningfully reduces risk now." },
+          { label: "Write a policy that says “don’t reuse passwords.”", plan:"Mitigate", delta:{asset:+1, signal:+1, fit:0}, feedback:"HELPFUL, but incomplete.\nPolicy is governance; you still need enforcement + technical control." }
+        ]
+      },
+      {
+        title: "Scene 4: The Vendor Trade",
+        text: "A vendor asks for access to upload course PDFs.\nThey want broad permissions “to make setup easy.”\n\nWhat plan do you choose for this risk item?",
+        choices: [
+          { label: "Mitigate: least privilege + limit access scope + define retention.", reg:{name:"Vendor Access", like:3, impact:3}, plan:"Mitigate", delta:{asset:+2, signal:+2, fit:+2}, feedback:"PRO MOVE.\nYou didn’t block progress. You shaped it safely." },
+          { label: "Accept: approve broad access and move on.", reg:{name:"Vendor Access", like:4, impact:3}, plan:"Accept", delta:{asset:0, signal:-2, fit:-1}, feedback:"RISK DEBT.\nAcceptance should be deliberate and documented, not convenience-based." },
+          { label: "Avoid: refuse vendors entirely.", reg:{name:"Vendor Access", like:1, impact:1}, plan:"Avoid", delta:{asset:0, signal:0, fit:0}, feedback:"TOO EXTREME.\nAvoidance can be valid, but it can also freeze growth. Balance matters." }
+        ]
+      },
+      {
+        title: "Scene 5: Risk Register Reality",
+        text: "Leadership asks: “What should we handle first?”\n\nPick the best prioritization logic.",
+        choices: [
+          { label: "Handle highest impact + likely items first (risk-based prioritization).", delta:{asset:+1, signal:+3, fit:+1}, feedback:"YES.\nWeek 2 skill is prioritizing based on risk signal, not noise." },
+          { label: "Handle the easiest items first to feel productive.", delta:{asset:0, signal:-1, fit:0}, feedback:"TEMPTING.\nQuick wins are nice, but don’t ignore high-risk items." },
+          { label: "Handle whatever leadership mentions last.", delta:{asset:0, signal:-2, fit:0}, feedback:"CHAOS MODE.\nGRC builds consistency. A register exists so decisions aren’t random." }
+        ]
+      },
+      {
+        title: "Scene 6: The Final Brief",
+        text: "You get one sentence to summarize Week 2.\nPick the best message.",
+        choices: [
+          { label: "“We protect what matters by mapping assets, scoring risk, and choosing controls that fit.”", delta:{asset:+2, signal:+2, fit:+2}, feedback:"NAILED IT.\nThat’s the Week 2 mindset." },
+          { label: "“We need more rules.”", delta:{asset:0, signal:0, fit:0}, feedback:"PARTIAL.\nRules help, but Week 2 is about risk logic and control fit." },
+          { label: "“We should stop using vendors.”", delta:{asset:0, signal:0, fit:-1}, feedback:"MISDIRECTED.\nVendors aren’t the enemy. Unmanaged risk is." }
+        ]
+      }
+    ];
+
+    let sceneIndex = 0;
+    let asset = 50;   // 0..100
+    let signal = 50;  // 0..100
+    let fit = 50;     // 0..100
+    let score = 0;
+
+    // Lightweight “risk register” display (3 items)
+    const register = [];
+
+    const sceneTitleEl = document.getElementById("sceneTitle");
+    const sceneTextEl = document.getElementById("sceneText");
+    const choicesEl = document.getElementById("choices");
+    const feedbackEl = document.getElementById("feedback");
+    const footerActionsEl = document.getElementById("footerActions");
+    const nextBtn = document.getElementById("nextBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const restartBtn2 = document.getElementById("restartBtn2");
+    const endBlock = document.getElementById("endBlock");
+    const endSummary = document.getElementById("endSummary");
+    const completionCodeEl = document.getElementById("completionCode");
+    const copyBtn = document.getElementById("copyBtn");
+
+    const assetFill = document.getElementById("assetFill");
+    const signalFill = document.getElementById("signalFill");
+    const fitFill = document.getElementById("fitFill");
+    const rankText = document.getElementById("rankText");
+    const scoreText = document.getElementById("scoreText");
+    const progressText = document.getElementById("progressText");
+
+    const riskTable = document.getElementById("riskTable");
+    const r1 = document.getElementById("r1");
+    const r2 = document.getElementById("r2");
+    const r3 = document.getElementById("r3");
+
+    function clamp(n){ return Math.max(0, Math.min(100, n)); }
+
+    function rank(){
+      const total = asset + signal + fit;
+      if (total >= 240) return "Control Cartographer";
+      if (total >= 210) return "Risk Mapper";
+      if (total >= 180) return "Signal Spotter";
+      return "Busy Button-Clicker (improving)";
+    }
+
+    function updateUI(){
+      assetFill.style.width = asset + "%";
+      signalFill.style.width = signal + "%";
+      fitFill.style.width = fit + "%";
+      scoreText.textContent = String(score);
+      rankText.textContent = rank();
+      progressText.textContent = endBlock.style.display === "block" ? "Complete" : `Scene ${sceneIndex + 1} of ${scenes.length}`;
+
+      if (register.length) {
+        riskTable.style.display = "block";
+        const rows = [r1, r2, r3];
+        rows.forEach((el, idx) => {
+          const item = register[idx];
+          if (!item) { el.innerHTML = `<div class="small">—</div><div class="small">—</div><div class="small">—</div><div class="small">—</div>`; return; }
+          el.innerHTML = `
+            <div><span class="tag">${item.name}</span></div>
+            <div>${item.like ?? "—"}</div>
+            <div>${item.impact ?? "—"}</div>
+            <div>${item.plan ?? "—"}</div>
+          `;
+        });
+      }
+    }
+
+    function showFeedback(text, type){
+      feedbackEl.textContent = text;
+      feedbackEl.className = "feedback " + type;
+      feedbackEl.style.display = "block";
+      footerActionsEl.style.display = "flex";
+    }
+
+    function renderScene(){
+      feedbackEl.style.display = "none";
+      footerActionsEl.style.display = "none";
+      endBlock.style.display = "none";
+
+      const s = scenes[sceneIndex];
+      sceneTitleEl.textContent = s.title;
+      sceneTextEl.textContent = s.text;
+
+      choicesEl.innerHTML = "";
+      s.choices.forEach((c) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.type = "button";
+        btn.textContent = c.label;
+        btn.addEventListener("click", () => choose(c));
+        choicesEl.appendChild(btn);
+      });
+
+      updateUI();
+    }
+
+    function choose(c){
+      // disable choices after click
+      Array.from(choicesEl.querySelectorAll("button.choice")).forEach(b => b.disabled = true);
+
+      asset = clamp(asset + (c.delta.asset * 6));
+      signal = clamp(signal + (c.delta.signal * 6));
+      fit = clamp(fit + (c.delta.fit * 6));
+
+      score += (c.delta.asset * 2) + (c.delta.signal * 3) + (c.delta.fit * 3);
+
+      // Add to register when provided
+      if (c.reg) {
+        const entry = { name: c.reg.name, like: c.reg.like, impact: c.reg.impact, plan: c.plan ?? "—" };
+        // keep max 3
+        if (register.length < 3) register.push(entry);
+        else register[register.length - 1] = entry;
+      } else if (c.plan && register.length) {
+        // apply plan to latest entry if present
+        register[register.length - 1].plan = c.plan;
+      }
+
+      // feedback style
+      let type = "warn";
+      const scoreSignal = c.delta.asset + c.delta.signal + c.delta.fit;
+      if (scoreSignal >= 6) type = "good";
+      if (scoreSignal <= 2) type = "bad";
+
+      showFeedback(c.feedback, type);
+      updateUI();
+    }
+
+    function endGame(){
+      choicesEl.innerHTML = "";
+      feedbackEl.style.display = "none";
+      footerActionsEl.style.display = "none";
+
+      const total = asset + signal + fit;
+      const r = rank();
+
+      endSummary.textContent =
+        `MISSION COMPLETE.\n\nRank: ${r}\nScore: ${score}\n\nWeek 2 takeaway: map assets → score risk (likelihood + impact) → choose controls that fit.\nThat’s how GRC stays practical.`;
+
+      endBlock.style.display = "block";
+
+      const random3 = Math.floor(Math.random() * 900) + 100;
+      const code = `VONE-W2-${Math.max(0, score)}-${random3}`;
+      completionCodeEl.textContent = code;
+
+      updateUI();
+    }
+
+    nextBtn.addEventListener("click", () => {
+      if (sceneIndex < scenes.length - 1) {
+        sceneIndex++;
+        renderScene();
+      } else {
+        endGame();
+      }
+    });
+
+    restartBtn.addEventListener("click", () => window.location.reload());
+    restartBtn2.addEventListener("click", () => window.location.reload());
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(completionCodeEl.textContent);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy Code"), 900);
+      } catch {
+        copyBtn.textContent = "Copy manually";
+        setTimeout(() => (copyBtn.textContent = "Copy Code"), 900);
+      }
+    });
+
+    renderScene();
+  </script>
+</body>
+</html>
